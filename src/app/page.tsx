@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, ArrowRight, Bot, Code } from "lucide-react";
+import { Copy, ArrowRight, Bot, Code, ClipboardPaste } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -23,12 +23,12 @@ export default function Home() {
   "email": "john.doe@example.com"
 }'`;
 
-    const handleConvert = async () => {
-        if (!curlCommand) return;
+    const handleConvert = async (command: string) => {
+        if (!command) return;
         setIsLoading(true);
         setPythonCode("");
         try {
-            const result = await curlToPythonConversion({ curlCommand });
+            const result = await curlToPythonConversion({ curlCommand: command });
             setPythonCode(result.pythonCode);
         } catch (error) {
             console.error("Conversion failed:", error);
@@ -39,6 +39,28 @@ export default function Home() {
             });
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handlePasteAndConvert = async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (text) {
+                setCurlCommand(text);
+                await handleConvert(text);
+            } else {
+                toast({
+                    title: "Clipboard Empty",
+                    description: "Your clipboard is empty. Please copy a cURL command first.",
+                });
+            }
+        } catch (error) {
+            console.error("Failed to read from clipboard:", error);
+            toast({
+                title: "Clipboard Error",
+                description: "Could not read from clipboard. Please check browser permissions.",
+                variant: "destructive",
+            });
         }
     };
 
@@ -81,8 +103,12 @@ export default function Home() {
                                     aria-label="cURL command input"
                                 />
                             </CardContent>
-                            <CardFooter>
-                                <Button onClick={handleConvert} disabled={isLoading || !curlCommand} size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold">
+                            <CardFooter className="grid grid-cols-2 gap-4">
+                                <Button onClick={handlePasteAndConvert} disabled={isLoading} size="lg" variant="outline">
+                                    <ClipboardPaste className="mr-2 h-5 w-5" />
+                                    Import & Convert
+                                </Button>
+                                <Button onClick={() => handleConvert(curlCommand)} disabled={isLoading || !curlCommand} size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold">
                                     {isLoading ? (
                                         <>
                                             <Bot className="mr-2 h-5 w-5 animate-spin" />
